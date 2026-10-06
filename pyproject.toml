@@ -1,0 +1,12 @@
+[project]
+name = "residual-streams"
+version = "0.1.0"
+description = "Readable PyTorch implementations of hyper-connections and frac-connections, checked against the papers"
+requires-python = ">=3.10"
+dependencies = ["torch>=2.4"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
