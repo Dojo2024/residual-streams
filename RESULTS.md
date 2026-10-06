@@ -100,16 +100,50 @@ What adding layer 9 to the last layer gains, within each model:
 | Age R² | +.001 | **+.009** |
 | PMG | −.012 | **+.015** |
 
+## Best readout for each: the split readout
+
+The dense tasks read layers 6+9+12 concatenated, and age and PMG pool layers 9+12. This is the plain model's best readout. Equal epochs:
+
+| Task | Plain | HC | Change | Seeds better |
+|---|---|---|---|---|
+| Hippocampus | .804 | .813 | **+.010** | **4/4** |
+| Cortex | .785 | .785 | .000 | 2/4 |
+| Tumor | .897 | .898 | +.001 | 3/4 |
+| Lesion | .715 | .715 | +.001 | 1/4 |
+| Age R² | .874 | .871 | −.003 | 1/4 |
+| Nerve | .018 | .019 | +.001 | 3/4 |
+| Vessel | .016 | .014 | −.002 | 0/4 |
+| PMG | .920 | .945 | **+.025** | 3/4 |
+
+## Layer by layer
+
+Each layer is probed on its own (equal epochs, 4 seeds). Cells show plain / HC (change, seeds where HC is better).
+
+![Probe score by encoder layer, plain vs hyper-connections](figures/layer_profile_hc_vs_plain.png)
+
+| Task | Layer 3 | Layer 6 | Layer 9 | Layer 12 |
+|---|---|---|---|---|
+| Hippocampus | .660 / .673 (+.013, 4/4) | .753 / .786 (**+.033, 4/4**) | .788 / .800 (+.012, 4/4) | .791 / .791 (.000, 2/4) |
+| Cortex | .749 / .746 (−.003, 1/4) | .763 / .752 (−.011, 0/4) | .754 / .749 (−.005, 0/4) | .741 / .756 (**+.015, 4/4**) |
+| Tumor | .808 / .815 (+.007, 3/4) | .868 / .879 (+.011, 3/4) | .889 / .896 (+.007, 3/4) | .897 / .888 (−.008, 1/4) |
+| Lesion | .699 / .677 (−.021, 0/4) | .714 / .714 (−.001, 2/4) | .709 / .713 (+.004, 2/4) | .714 / .714 (+.001, 1/4) |
+| Age R² | .794 / .798 (+.004, 3/4) | .839 / .845 (+.006, 3/4) | .865 / .864 (−.001, 2/4) | .873 / .862 (−.011, 0/4) |
+| Nerve | .016 / .017 (.000, 1/4) | .017 / .016 (−.001, 0/4) | .018 / .015 (−.003, 0/4) | .020 / .020 (.000, 1/4) |
+| Vessel | .011 / .012 (+.001, 4/4) | .013 / .014 (.000, 3/4) | .015 / .014 (−.001, 0/4) | .016 / .015 (−.001, 0/4) |
+| PMG | .907 / .878 (−.029, 2/4) | .875 / .908 (**+.034, 4/4**) | .918 / .957 (**+.040, 4/4**) | .932 / .930 (−.002, 2/4) |
+
 ## What we take from it
 
 - **Per epoch, hyper-connections learn faster.** The training loss is lower at every matched epoch, the dense anatomy probes improve (cortex +.015 last layer, hippocampus +.009 with layers 9+12, all 4 seeds), and the other tasks are about even.
 - **Per hour they don't,** at width 384. The 1.6× step time costs 6 of 15 epochs, and the tasks that track training length (hippocampus, age, tumor) drop.
 - **The 1-hour lesion gain was a training-length effect.** HC's lesion score was +.020 at 9 epochs, but fell back to the baseline at 15, consistent with this lesion probe dropping as pretraining runs longer.
 - **Hyper-connection layers are less redundant.** Adding layer 9 helps HC more than plain on hippocampus, tumor, age and PMG. That fits the paper's observation that adjacent HC layers are less similar.
+- **The middle layers carry most of the hyper-connection gain.** At layer 6 HC leads on hippocampus (+.033), tumor and PMG (+.034), on all or most seeds. HC builds useful features earlier, and the gap narrows by layer 12.
+- **Cortex is the exception.** The plain model's cortex score peaks at layer 6 and falls to layer 12; HC's is flatter and ends higher. So HC's last-layer cortex gain is HC keeping that detail to the top, not better cortex features overall. Once both readouts include layer 6 (the split readout), they tie on cortex.
+- **With each model's best readout, HC wins hippocampus (+.010, 4/4) and PMG (+.025, 3/4) and ties the rest.** Vessel is the only small, consistent loss (−.002, 0/4).
 - **Frac-connections are cheaper but don't keep the gains.** At 11 epochs they are close to plain on every task. The cortex gain seems to need the real extra width of 4 streams.
 
 ## Next
 
-- Split readout (dense tasks from layers 6+9+12) and a per-layer sweep (3, 6, 9) for plain and HC.
 - Static versions (SHC, SFC), and bf16 streams.
 - mHC and mHC-lite (doubly-stochastic stream mixing), at equal epochs.
